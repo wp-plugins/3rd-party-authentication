@@ -14,9 +14,6 @@ Stable tag: 0.1.2
 # Gmail / Google Apps
 # Any generic POP/IMAP email service
 
-It is a heavily modified version of the HTTP Authentication plugin: http://dev.webadmin.ufl.edu/~dwc/2008/04/16/http-authentication-20/
-With some help from WP Google Apps: http://serow.jp/labs/wpgoogleapps/
-
 == Installation ==
 
 1. Download 3rd-party-authentication.php and place in wp-content/plugins
@@ -24,5 +21,10 @@ With some help from WP Google Apps: http://serow.jp/labs/wpgoogleapps/
 3. Go to Plugins and "Activate" the plugin
 
 == Frequently Asked Questions ==
+
+1. Some of the code looks familiar
+
+It is a heavily modified version of the HTTP Authentication plugin: http://dev.webadmin.ufl.edu/~dwc/2008/04/16/http-authentication-20/
+with some help from WP Google Apps: http://serow.jp/labs/wpgoogleapps/
 
 == Screenshots ==
