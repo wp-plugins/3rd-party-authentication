@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: 3rd Party Authentication
-Version: 0.1.2
+Version: 0.1.3
 Plugin URI: http://jameslow.com/2008/11/24/3rd-party-authentication/
 Description: 3rd Party Authentication is a wordpress plugin that allows wordpress to authenticate against other authentication systems.
 Author: James Low
@@ -177,7 +177,7 @@ if (! class_exists('ThirdPartyPlugin')) {
 					$usegoogle = false;
 					$googleall = (bool) get_option('3rd_party_google_apps_all');
 					if (!$googleall) {
-						$googledomains = explode(",",get_option('3rd_party_google_apps_domains'));
+						$googledomains = explode(",",ereg_replace(' ','',get_option('3rd_party_google_apps_domains')));
 						if (!(bool) get_option('3rd_party_google_apps_dont')) {
 							$googledomains[] = 'gmail.com';
 							$googledomains[] = 'googlemail.com';
@@ -355,10 +355,10 @@ if (! class_exists('ThirdPartyPlugin')) {
       <tr valign="top">
         <th scope="row"><label for="3rd_party_google_apps_domains">Google apps settings</label></th>
         <td>
-          <input type="checkbox" name="3rd_party_google_apps_dont" id="3rd_party_google_apps_dont"<?php if ($google_apps_dont) echo ' checked="checked"' ?> value="1" />Don't authenticate gmail/googlemail logins?
+          <input type="checkbox" name="3rd_party_google_apps_dont" id="3rd_party_google_apps_dont"<?php if ($google_apps_dont) echo ' checked="checked"' ?> value="1" />Don't authenticate gmail.com/googlemail.com logins?
           <br /><input type="checkbox" name="3rd_party_google_apps_all" id="3rd_party_google_apps_all"<?php if ($google_apps_all) echo ' checked="checked"' ?> value="1" />Authenticate all domains not specified in email settings below, via google apps?
           <br /><input type="text" name="3rd_party_google_apps_domains" id="3rd_party_google_apps_domains" value="<?php echo htmlspecialchars($google_apps_domains) ?>" size="50" />
-          A comma seperated list of domains to authenticate via google apps. Emails @gmail.com and @googlemail.com are automatically included.
+          A comma seperated list of domains to authenticate via google apps.
         </td>
       </tr>
     </table>

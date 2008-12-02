@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=donate%4
 Tags: authentication, permissions, email, google, apps, gmail, 3rd, party
 Requires at least: 2.1
 Tested up to: 2.5.1
-Stable tag: 0.1.2
+Stable tag: 0.1.3
 
 3rd Party Authentication is a wordpress plugin that allows wordpress to authenticate against other authentication systems.
 
