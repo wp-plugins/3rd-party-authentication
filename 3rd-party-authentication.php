@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: 3rd Party Authentication
-Version: 0.1.5
+Version: 0.1.6
 Plugin URI: http://jameslow.com/2008/11/24/3rd-party-authentication/
 Description: 3rd Party Authentication is a wordpress plugin that allows wordpress to authenticate against other authentication systems.
 Author: James Low
@@ -130,6 +130,7 @@ if (! class_exists('ThirdPartyPlugin')) {
 				add_option('3rd_party_allow_regular', false, 'Allow regular logins as well as email logins?');
 				add_option('3rd_party_google_apps_dont', false, "Don't authenticate gmail/googlemail logins?");
 				add_option('3rd_party_google_apps_all', false, 'Authenticate all domains via google apps?');
+				add_option('3rd_party_google_apps_create', false, 'Automatically create users that don\'t exist?');
 				add_option('3rd_party_google_apps_domains', '', 'A comma seperated list of domains to authenticate via google apps.');
 			}
 		}
@@ -143,6 +144,62 @@ if (! class_exists('ThirdPartyPlugin')) {
 			}
 		}
 		
+		function login_failed($username) {
+			if (!function_exists('wp_create_user')) {
+				include 'wp-includes/registration.php';
+			}
+			$create_users = (bool) get_option('3rd_party_google_apps_create');
+			if ($create_users && $this->cool_domain($username)) {
+				$user = get_userdatabylogin($username);
+				if ( !$user || ($user->user_login != $username) ) {
+					$random_password = wp_generate_password( 12, false );
+					$user_id = wp_create_user( $username, $random_password, '');
+				}
+				return $user_id;
+			}
+		}
+		
+		function use_email($domain) {
+			$email_settings = get_option('3rd_party_email_settings');
+			if (is_array($email_settings)) {
+				foreach ($email_settings as $setting) {
+					if (strtolower($setting['domain']) == strtolower($domain)) {
+						return $setting;
+					}
+				}
+			}
+			return null;
+		}
+		
+		function use_google($domain) {
+			$googleall = (bool) get_option('3rd_party_google_apps_all');
+			if (!$googleall) {
+				$googledomains = explode(",",ereg_replace(' ','',get_option('3rd_party_google_apps_domains')));
+				if (!(bool) get_option('3rd_party_google_apps_dont')) {
+					$googledomains[] = 'gmail.com';
+					$googledomains[] = 'googlemail.com';
+				}
+				foreach ($googledomains as $gdomain) {
+					if(strtolower($gdomain) == strtolower($domain)) {
+						$usegoogle = true;
+						break;
+					}
+				}
+			} else {
+				$usegoogle = true;
+			}
+			return $usegoogle;
+		}
+		
+		function cool_domain($username) {
+			$parts = explode("@",$username);
+			if (count($parts) != 2) {
+				return false;
+			} else {
+				return ($this->use_email($parts[1]) != null || $this->use_google($parts[1]));
+			}
+		}
+		
 		function check_password($check, $password, $hash, $user_id) {
 			$user = get_userdata($user_id);
 			$username = $user->user_login;
@@ -153,17 +210,8 @@ if (! class_exists('ThirdPartyPlugin')) {
 				if (count($parts) != 2) {
 					die('Username not an email address.');
 				}
-				$useemail = false;
-				$email_settings = get_option('3rd_party_email_settings');
-				if (is_array($email_settings)) {
-					foreach ($email_settings as $setting) {
-						if (strtolower($setting['domain']) == strtolower($parts[1])) {
-							$useemail = true;
-							break;
-						}
-					}
-				}
-				if ($useemail) {
+				$setting = $this->use_email($parts[1]);
+				if ($setting != null) {
 					$usessl = (bool) $setting['ssl'];
 					if ((bool) $setting['imap'] == true) {
 						$authenticator = new IMAPAuthenticator($setting['server'],$usessl,$setting['port']);
@@ -174,24 +222,7 @@ if (! class_exists('ThirdPartyPlugin')) {
 						$username = $parts[0];
 					}
 				} else {
-					$usegoogle = false;
-					$googleall = (bool) get_option('3rd_party_google_apps_all');
-					if (!$googleall) {
-						$googledomains = explode(",",ereg_replace(' ','',get_option('3rd_party_google_apps_domains')));
-						if (!(bool) get_option('3rd_party_google_apps_dont')) {
-							$googledomains[] = 'gmail.com';
-							$googledomains[] = 'googlemail.com';
-						}
-						foreach ($googledomains as $domain) {
-							if(strtolower($domain) == strtolower($parts[1])) {
-								$usegoogle = true;
-								break;
-							}
-						}
-					} else {
-						$usegoogle = true;
-					}
-					if ($usegoogle) {
+					if ($this->use_google($parts[1])) {
 						$authenticator = new GoogleAuthenticator();
 					}
 				}
@@ -332,6 +363,7 @@ if (! class_exists('ThirdPartyPlugin')) {
 			}
 			
 			$allow_regular = (bool) get_option('3rd_party_allow_regular');
+			$create_users = (bool) get_option('3rd_party_google_apps_create');
 			$google_apps_dont = (bool) get_option('3rd_party_google_apps_dont');
 			$google_apps_all = (bool) get_option('3rd_party_google_apps_all');
 			$google_apps_domains = get_option('3rd_party_google_apps_domains');
@@ -341,7 +373,7 @@ if (! class_exists('ThirdPartyPlugin')) {
   <h2>3rd Party Authentication Options</h2>
   <form action="options.php" method="post">
     <input type="hidden" name="action" value="update" />
-    <input type="hidden" name="page_options" value="3rd_party_allow_regular,3rd_party_google_apps_dont,3rd_party_google_apps_all,3rd_party_google_apps_domains" />
+    <input type="hidden" name="page_options" value="3rd_party_allow_regular,3rd_party_google_apps_dont,3rd_party_google_apps_all,3rd_party_google_apps_domains,3rd_party_google_apps_create" />
     <?php if (function_exists('wp_nonce_field')): wp_nonce_field('update-options'); endif; ?>
 
     <table class="form-table">
@@ -350,6 +382,13 @@ if (! class_exists('ThirdPartyPlugin')) {
         <td>
           <input type="checkbox" name="3rd_party_allow_regular" id="3rd_party_allow_regular"<?php if ($allow_regular) echo ' checked="checked"' ?> value="1" />
           Allow regular logins as well as email/google logins?<br />
+        </td>
+      </tr>
+      <tr valign="top">
+        <th scope="row"><label for="3rd_party_google_apps_create">Auto Create Users?</label></th>
+        <td>
+          <input type="checkbox" name="3rd_party_google_apps_create" id="3rd_party_google_apps_create"<?php if ($create_users) echo ' checked="checked"' ?> value="1" />
+          Automatically create users that don't exist?<br />
         </td>
       </tr>
       <tr valign="top">
@@ -403,4 +442,38 @@ if (! class_exists('ThirdPartyPlugin')) {
 
 // Load the plugin hooks, etc.
 $third_party_plugin = new ThirdPartyPlugin();
+function wp_authenticate($username, $password) {
+	$username = sanitize_user($username);
+
+	if ( '' == $username )
+		return new WP_Error('empty_username', __('<strong>ERROR</strong>: The username field is empty.'));
+
+	if ( '' == $password )
+		return new WP_Error('empty_password', __('<strong>ERROR</strong>: The password field is empty.'));
+
+	$user = get_userdatabylogin($username);
+	if ( !$user || ($user->user_login != $username) ) {
+		global $third_party_plugin;
+		$third_party_plugin->login_failed($username);
+		$user = get_userdatabylogin($username);
+	}
+	
+	if ( !$user || ($user->user_login != $username) ) {
+		do_action( 'wp_login_failed', $username );
+		return new WP_Error('invalid_username', __('<strong>ERROR</strong>: Invalid username.'));
+	}
+
+	$user = apply_filters('wp_authenticate_user', $user, $password);
+	if ( is_wp_error($user) ) {
+		do_action( 'wp_login_failed', $username );
+		return $user;
+	}
+
+	if ( !wp_check_password($password, $user->user_pass, $user->ID) ) {
+		do_action( 'wp_login_failed', $username );
+		return new WP_Error('incorrect_password', __('<strong>ERROR</strong>: Incorrect password.'));
+	}
+
+	return new WP_User($user->ID);
+}
 ?>
