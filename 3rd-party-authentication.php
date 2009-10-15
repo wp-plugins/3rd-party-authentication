@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: 3rd Party Authentication
-Version: 0.1.6
+Version: 0.1.7
 Plugin URI: http://jameslow.com/2008/11/24/3rd-party-authentication/
 Description: 3rd Party Authentication is a wordpress plugin that allows wordpress to authenticate against other authentication systems.
 Author: James Low
@@ -108,6 +108,7 @@ if (! class_exists('ThirdPartyPlugin')) {
 			#add_action('wp_authenticate_user', array(&$this, 'authenticate'), 10, 2);
 			add_filter('check_password', array(&$this, 'check_password'), 10, 4);
 			#add_action('wp_logout', array(&$this, 'logout'));
+			add_action('login_form', array(&$this, 'login_form'));
 			if (!(bool) get_option('3rd_party_allow_regular')) {
 				add_action('lost_password', array(&$this, 'disable_function'));
 				add_action('retrieve_password', array(&$this, 'disable_function'));
@@ -141,6 +142,38 @@ if (! class_exists('ThirdPartyPlugin')) {
 		function add_options_page() {
 			if (function_exists('add_options_page')) {
 				add_options_page('3rd Party Authentication', '3rd Party Authentication', 9, __FILE__, array(&$this, '_display_options_page'));
+			}
+		}
+		
+		function domain_list() {
+			$domains = array();
+			if (!(bool) get_option('3rd_party_google_apps_dont')) {
+					$domains[] = 'gmail.com';
+					$domains[] = 'googlemail.com';
+			}
+			$email_settings = get_option('3rd_party_email_settings');
+			if (is_array($email_settings)) {
+				foreach ($email_settings as $setting) {
+					$domains[] = $setting['domain'];
+				}
+			}
+			return $domains;
+		}
+		
+		function login_form() {
+			$domains = $this->domain_list();
+			if (count($domains) > 0 ) {
+				for ($i = 0; $i < count($domains); $i++) {
+					$domain = $domains[$i];
+					if ($i == 0) {
+						$domainstring = $domain;
+					} elseif ($i == count($domains) -1) {
+						$domainstring .= ' or '.$domain;
+					} else {
+						$domainstring .= ', '.$domain;
+					}
+				}
+				echo 'Login with full '.$domainstring.' email. <a href="https://www.google.com/accounts/DisplayUnlockCaptcha">Password is still not working?</a><br /><br />';
 			}
 		}
 		
