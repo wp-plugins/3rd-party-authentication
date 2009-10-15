@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: 3rd Party Authentication
-Version: 0.1.8
+Version: 0.1.9
 Plugin URI: http://jameslow.com/2008/11/24/3rd-party-authentication/
 Description: 3rd Party Authentication is a wordpress plugin that allows wordpress to authenticate against other authentication systems.
 Author: James Low
@@ -475,6 +475,8 @@ if (! class_exists('ThirdPartyPlugin')) {
 
 // Load the plugin hooks, etc.
 $third_party_plugin = new ThirdPartyPlugin();
+//Only works if another function doesn't define this first
+if ( !function_exists('wp_authenticate') ) :
 function wp_authenticate($username, $password) {
 	$username = sanitize_user($username);
 
@@ -509,4 +511,5 @@ function wp_authenticate($username, $password) {
 
 	return new WP_User($user->ID);
 }
+endif;
 ?>
