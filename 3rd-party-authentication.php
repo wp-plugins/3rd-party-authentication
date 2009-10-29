@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: 3rd Party Authentication
-Version: 0.1.9
+Version: 0.2.0
 Plugin URI: http://jameslow.com/2008/11/24/3rd-party-authentication/
 Description: 3rd Party Authentication is a wordpress plugin that allows wordpress to authenticate against other authentication systems.
 Author: James Low
@@ -145,12 +145,20 @@ if (! class_exists('ThirdPartyPlugin')) {
 			}
 		}
 		
-		function domain_list() {
-			$domains = explode(",",ereg_replace(' ','',get_option('3rd_party_google_apps_domains')));
+		function google_domains() {
+			$domain_option = get_option('3rd_party_google_apps_domains');
+			if (isset($domain_option) && trim($domain_option) != '') {
+				$domains = explode(",",ereg_replace(' ','',$domain_option));
+			}
 			if (!(bool) get_option('3rd_party_google_apps_dont')) {
 					$domains[] = 'gmail.com';
 					$domains[] = 'googlemail.com';
 			}
+			return $domains;
+		}
+		
+		function domain_list() {
+			$domains = $this->google_domains();
 			$email_settings = get_option('3rd_party_email_settings');
 			if (is_array($email_settings)) {
 				foreach ($email_settings as $setting) {
@@ -207,11 +215,7 @@ if (! class_exists('ThirdPartyPlugin')) {
 		function use_google($domain) {
 			$googleall = (bool) get_option('3rd_party_google_apps_all');
 			if (!$googleall) {
-				$googledomains = explode(",",ereg_replace(' ','',get_option('3rd_party_google_apps_domains')));
-				if (!(bool) get_option('3rd_party_google_apps_dont')) {
-					$googledomains[] = 'gmail.com';
-					$googledomains[] = 'googlemail.com';
-				}
+				$googledomains = $this->google_domains();
 				foreach ($googledomains as $gdomain) {
 					if(strtolower($gdomain) == strtolower($domain)) {
 						$usegoogle = true;
