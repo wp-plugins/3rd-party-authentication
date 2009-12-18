@@ -170,6 +170,9 @@ if (! class_exists('ThirdPartyPlugin')) {
 		
 		function login_form() {
 			$domains = $this->domain_list();
+			if ((bool) get_option('3rd_party_allow_regular')) {
+				$domains[] = 'Wordpress';
+			}
 			if (count($domains) > 0 ) {
 				for ($i = 0; $i < count($domains); $i++) {
 					$domain = $domains[$i];
